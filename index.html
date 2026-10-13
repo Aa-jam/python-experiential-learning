@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tic Tac Toe</title>
+<style>
+  body { font-family: Arial, sans-serif; text-align: center; background: #f0f4f8; margin: 0; padding: 20px; }
+  h1 { color: #333; }
+  #board { display: grid; grid-template-columns: repeat(3, 100px); gap: 8px; justify-content: center; margin: 20px auto; }
+  .cell { width: 100px; height: 100px; font-size: 48px; font-weight: bold; background: #fff; border: 2px solid #333; border-radius: 8px; cursor: pointer; }
+  .cell:hover { background: #e8eef5; }
+  button.ctrl { padding: 10px 16px; margin: 4px; font-size: 16px; border: none; border-radius: 6px; background: #2563eb; color: #fff; cursor: pointer; }
+  #status { font-size: 22px; margin: 10px; min-height: 30px; }
+</style>
+</head>
+<body>
+  <h1>Tic Tac Toe</h1>
+  <div>
+    <button class="ctrl" onclick="setMode('two')">2 Players</button>
+    <button class="ctrl" onclick="setMode('cpu')">Vs Computer</button>
+  </div>
+  <div id="status"></div>
+  <div id="board"></div>
+  <div>Score - X: <span id="sx">0</span> | O: <span id="so">0</span> | Draws: <span id="sd">0</span></div>
+  <button class="ctrl" onclick="resetBoard()">Play Again</button>
+
+<script>
+let board, current, over, mode = 'two';
+const score = { X: 0, O: 0, D: 0 };
+const lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+
+function setMode(m) { mode = m; score.X = score.O = score.D = 0; updateScore(); resetBoard(); }
+
+function resetBoard() {
+  board = Array(9).fill('');
+  current = 'X';
+  over = false;
+  render();
+  setStatus("X's turn");
+}
+
+function render() {
+  const el = document.getElementById('board');
+  el.innerHTML = '';
+  board.forEach((v, i) => {
+    const b = document.createElement('button');
+    b.className = 'cell';
+    b.textContent = v;
+    b.onclick = () => move(i);
+    el.appendChild(b);
+  });
+}
+
+function winner(b) {
+  for (const [a, c, d] of lines) if (b[a] && b[a] === b[c] && b[a] === b[d]) return b[a];
+  return b.every(x => x) ? 'D' : null;
+}
+
+function move(i) {
+  if (over || board[i]) return;
+  board[i] = current;
+  render();
+  if (endCheck()) return;
+  current = current === 'X' ? 'O' : 'X';
+  setStatus(current + "'s turn");
+  if (mode === 'cpu' && current === 'O') setTimeout(cpuMove, 400);
+}
+
+function cpuMove() {
+  const free = board.map((v, i) => v ? null : i).filter(i => i !== null);
+  let pick = null;
+  for (const who of ['O', 'X']) {          // win first, then block
+    for (const i of free) {
+      const t = [...board]; t[i] = who;
+      if (winner(t) === who) { pick = i; break; }
+    }
+    if (pick !== null) break;
+  }
+  if (pick === null) pick = free.includes(4) ? 4 : free[Math.floor(Math.random() * free.length)];
+  move(pick);
+}
+
+function endCheck() {
+  const w = winner(board);
+  if (!w) return false;
+  over = true;
+  if (w === 'D') { score.D++; setStatus("It's a draw!"); }
+  else { score[w]++; setStatus(w + ' wins!'); }
+  updateScore();
+  return true;
+}
+
+function updateScore() {
+  document.getElementById('sx').textContent = score.X;
+  document.getElementById('so').textContent = score.O;
+  document.getElementById('sd').textContent = score.D;
+}
+function setStatus(t) { document.getElementById('status').textContent = t; }
+
+resetBoard();
+</script>
+</body>
+</html>
