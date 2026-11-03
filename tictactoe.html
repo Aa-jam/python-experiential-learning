@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tic Tac Toe – Multiplayer</title>
+<style>
+:root{--bg:#09152F;--panel:#122447;--cell:#1B3157;--text:#F4F7FF;--cyan:#28D7FF;--pink:#FF5C93;--yellow:#FFE66D;--green:#20E3A2;--purple:#9B6BFF;--on:#09152F;--cs:88px;--cf:34px;
+color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#09152F}}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"Trebuchet MS","Segoe UI",Arial,sans-serif;min-height:100%;display:flex;flex-direction:column;align-items:center;padding:14px 12px 24px}
+h1{margin:0;color:var(--cyan);font-size:clamp(24px,6vw,34px);letter-spacing:1px}
+.sub{color:var(--yellow);font-weight:700;font-size:13px;margin:2px 0 12px;text-align:center}
+.panel{background:var(--panel);border-radius:12px;padding:10px 14px;width:100%;max-width:640px}
+.set{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.set b{font-size:14px}
+.seg{display:flex;gap:4px}
+.seg button,select{font:inherit;font-weight:700;color:var(--text);background:var(--cell);border:0;border-radius:8px;padding:6px 14px;cursor:pointer;transition:background .25s,transform .15s}
+.seg button.on{background:var(--purple)}
+.seg button:active,.btn:active{transform:scale(.94)}
+#info{margin-left:auto;color:var(--yellow);font-size:13px;font-weight:700}
+#players{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;margin:10px 0;width:100%;max-width:640px}
+.pl{display:flex;align-items:center;gap:6px;animation:slide .3s ease}
+.pl i{font-style:normal;font-weight:800;font-size:20px;width:24px;text-align:center}
+.pl input[type=text]{min-width:0;flex:1;background:var(--cell);color:var(--text);border:0;border-radius:6px;padding:7px 8px;font:inherit}
+.pl label{font-size:13px;white-space:nowrap;cursor:pointer}
+@keyframes slide{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+#bar{height:5px;width:min(80%,420px);border-radius:3px;background:var(--cyan);transition:background .5s;margin-top:4px}
+#status{font-size:clamp(15px,4vw,19px);font-weight:700;margin:10px 0;text-align:center;min-height:26px;transition:color .5s}
+#board{display:grid;gap:6px;justify-content:center;margin:4px 0}
+.c{width:var(--cs);height:var(--cs);background:var(--panel);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:var(--cf);font-weight:800;cursor:pointer;user-select:none;animation:intro .45s both;transition:background .3s,transform .15s}
+.c.lock{cursor:default}
+.c:not(.lock):hover{background:#294775;transform:translateY(-2px)}
+.c span{display:inline-block}
+.c.pop span{animation:pop .45s cubic-bezier(.3,1.6,.5,1)}
+.c.win{animation:blink .35s 6 alternate}
+@keyframes intro{from{opacity:0;transform:scale(.4);background:var(--purple)}to{opacity:1;transform:none}}
+@keyframes pop{0%{transform:scale(.2) rotate(-40deg);opacity:0}100%{transform:none;opacity:1}}
+@keyframes blink{from{background:var(--green);transform:scale(1)}to{background:#174C49;transform:scale(1.06)}}
+#scores{display:flex;justify-content:space-around;text-align:center;margin-top:12px;font-weight:700;font-size:14px;line-height:1.5}
+#scores div{transition:transform .3s}
+#scores .bump{transform:scale(1.25)}
+.ctl{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:14px}
+.btn{border:0;border-radius:8px;padding:9px 15px;font:inherit;font-weight:700;color:var(--on);cursor:pointer;transition:transform .15s,filter .2s}
+.btn:hover{filter:brightness(1.12)}
+.btn:focus-visible,.seg button:focus-visible,select:focus-visible{outline:3px solid var(--text);outline-offset:2px}
+#ov{position:fixed;inset:0;background:rgba(4,10,25,.7);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s;z-index:10;padding:16px}
+#ov.show{opacity:1;pointer-events:auto}
+.pop-card{position:relative;overflow:hidden;background:var(--panel);border:3px solid var(--cyan);border-radius:16px;padding:22px 26px;width:min(400px,100%);text-align:center;transform:translateY(50px) scale(.9);transition:transform .35s cubic-bezier(.2,1.3,.4,1)}
+#ov.show .pop-card{transform:none}
+.pop-card .em{font-size:54px;line-height:1.1}
+.pop-card h2{margin:6px 0;font-size:25px}
+.pop-card p{white-space:pre-line;margin:6px 0 16px;line-height:1.5}
+.pop-card .row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.cf{position:absolute;top:-12px;width:8px;height:12px;animation:fall linear forwards;pointer-events:none}
+@keyframes fall{to{transform:translateY(460px) rotate(540deg);opacity:.2}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<h1>✦ Tic Tac Toe ✦</h1>
+<div class="sub">Multiplayer edition: 2 to 4 players</div>
+
+<div class="panel set">
+  <b>Players</b>
+  <div class="seg" id="seg"></div>
+  <b>CPU level</b>
+  <select id="diff" aria-label="CPU level"><option>Easy</option><option selected>Medium</option><option>Hard</option></select>
+  <span id="info"></span>
+</div>
+
+<div id="players"></div>
+<div id="bar"></div>
+<div id="status"></div>
+<div id="board"></div>
+<div class="panel" id="scores"></div>
+
+<div class="ctl">
+  <button class="btn" style="background:var(--purple);color:#fff" id="bUndo">↩ Undo</button>
+  <button class="btn" style="background:var(--green)" id="bNew">🔄 New round</button>
+  <button class="btn" style="background:var(--pink)" id="bReset">Reset scores</button>
+  <button class="btn" style="background:var(--yellow)" id="bRules">📖 Rules</button>
+</div>
+
+<div id="ov"><div class="pop-card" id="card"></div></div>
+
+<script>
+const STY=[["X","#28D7FF"],["O","#FF5C93"],["▲","#FFE66D"],["■","#20E3A2"]];
+const CFG={2:[3,3],3:[5,4],4:[6,4]};
+const CELL={3:["min(92px,24vw)","36px"],5:["min(66px,16vw)","26px"],6:["min(56px,13.5vw)","22px"]};
+const DIRS=[[0,1],[1,0],[1,1],[1,-1]];
+const $=id=>document.getElementById(id);
+const S={n:2,size:3,win:3,board:[],cur:0,starter:0,over:false,hist:[],scores:[0,0,0,0],draws:0,rid:0,ai:null};
+
+/* ---------- setup ---------- */
+const seg=$("seg");
+[2,3,4].forEach(n=>{const b=document.createElement("button");b.textContent=n;b.onclick=()=>{S.n=n;applyPlayers()};seg.appendChild(b)});
+STY.forEach(([s,c],i)=>{
+  const d=document.createElement("div");d.className="pl";d.id="pl"+i;
+  d.innerHTML=`<i style="color:${c}">${s}</i><input type="text" id="nm${i}" value="Player ${i+1}" maxlength="14" aria-label="Name of player ${i+1}"><label><input type="checkbox" id="cpu${i}"> 🤖 CPU</label>`;
+  $("players").appendChild(d);
+  $("cpu"+i).onchange=newRound;
+  $("nm"+i).oninput=updateScores;
+});
+$("diff").onchange=newRound;
+$("bUndo").onclick=undo;$("bNew").onclick=newRound;$("bReset").onclick=confirmReset;$("bRules").onclick=showRules;
+
+const isCpu=i=>$("cpu"+i).checked;
+function name(i){let v=$("nm"+i).value.trim()||"Player "+(i+1);if(isCpu(i)&&v==="Player "+(i+1))v="CPU "+(i+1);return v}
+
+function applyPlayers(){
+  [...seg.children].forEach((b,k)=>b.classList.toggle("on",k+2===S.n));
+  STY.forEach((_,i)=>$("pl"+i).style.display=i<S.n?"flex":"none");
+  S.scores=[0,0,0,0];S.draws=0;S.starter=0;
+  newRound();
+}
+
+function newRound(){
+  clearTimeout(S.ai);S.ai=null;
+  [S.size,S.win]=CFG[S.n];
+  S.board=Array(S.size*S.size).fill(null);
+  S.cur=S.starter%S.n;S.over=false;S.hist=[];S.rid++;
+  $("info").textContent=`${S.size}×${S.size} board · ${S.win} in a row`;
+  buildBoard();updateBoard();updateStatus();updateScores();cpuTurn();
+}
+
+function buildBoard(){
+  const b=$("board");b.innerHTML="";
+  const [cs,cf]=CELL[S.size];
+  document.documentElement.style.setProperty("--cs",cs);
+  document.documentElement.style.setProperty("--cf",cf);
+  b.style.gridTemplateColumns=`repeat(${S.size},var(--cs))`;
+  S.board.forEach((_,i)=>{
+    const c=document.createElement("div");
+    c.className="c";c.style.animationDelay=(i*18)+"ms";
+    c.setAttribute("role","button");c.setAttribute("aria-label","Cell "+(i+1));
+    c.onclick=()=>playerMove(i);
+    b.appendChild(c);
+  });
+}
+
+function updateBoard(){
+  [...$("board").children].forEach((c,i)=>{
+    const o=S.board[i];
+    if(o!==null&&!c.firstChild){c.innerHTML=`<span style="color:${STY[o][1]}">${STY[o][0]}</span>`}
+    if(o===null)c.innerHTML="";
+    c.classList.toggle("lock",S.over||o!==null||isCpu(S.cur));
+  });
+}
+
+function updateStatus(){
+  if(S.over)return;
+  const [s,c]=STY[S.cur],n=name(S.cur);
+  $("status").textContent=isCpu(S.cur)?`🤖 ${n} (${s}) is thinking…`:`✨ ${n} (${s}), your turn!`;
+  $("status").style.color=c;$("bar").style.background=c;
+}
+
+function updateScores(){
+  const box=$("scores");
+  if(box.children.length!==S.n+1){
+    box.innerHTML="";
+    for(let i=0;i<=S.n;i++)box.appendChild(document.createElement("div"));
+  }
+  for(let i=0;i<S.n;i++){
+    const d=box.children[i];
+    d.style.color=STY[i][1];
+    d.innerHTML=`${STY[i][0]} ${esc(name(i).slice(0,10))}<br>${S.scores[i]}`;
+  }
+  box.children[S.n].innerHTML=`🤝 Draws<br>${S.draws}`;
+}
+const esc=s=>s.replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
+function bump(i){const d=$("scores").children[i];if(!d)return;d.classList.add("bump");setTimeout(()=>d.classList.remove("bump"),350)}
+
+/* ---------- game logic ---------- */
+function runs(pos,p){
+  const n=S.size,r=Math.floor(pos/n),c=pos%n,out=[];
+  for(const [dr,dc] of DIRS){
+    const cells=[pos];
+    for(const sg of [1,-1]){
+      let rr=r+dr*sg,cc=c+dc*sg;
+      while(rr>=0&&rr<n&&cc>=0&&cc<n&&S.board[rr*n+cc]===p){cells.push(rr*n+cc);rr+=dr*sg;cc+=dc*sg}
+    }
+    out.push(cells);
+  }
+  return out;
+}
+const getLine=(pos,p)=>runs(pos,p).find(c=>c.length>=S.win)||null;
+
+function playerMove(i){
+  if(S.over||isCpu(S.cur)||S.board[i]!==null)return;
+  makeMove(i);
+}
+
+function makeMove(pos){
+  S.hist.push([pos,S.cur]);
+  S.board[pos]=S.cur;
+  updateBoard();
+  const cell=$("board").children[pos];
+  cell.classList.add("pop");
+  const line=getLine(pos,S.cur);
+  if(line)return finish(S.cur,line);
+  if(!S.board.includes(null))return finishDraw();
+  S.cur=(S.cur+1)%S.n;
+  updateBoard();updateStatus();cpuTurn();
+}
+
+function cpuTurn(){
+  if(!S.over&&isCpu(S.cur)){
+    const rid=S.rid;
+    S.ai=setTimeout(()=>{S.ai=null;if(rid===S.rid&&!S.over&&isCpu(S.cur))makeMove(chooseMove())},650);
+  }
+}
+
+function chooseMove(){
+  const me=S.cur,n=S.n,lvl=$("diff").value;
+  const empty=S.board.map((v,i)=>v===null?i:-1).filter(i=>i>=0);
+  if(lvl==="Easy")return pick(empty);
+  for(const p of empty){S.board[p]=me;const l=getLine(p,me);S.board[p]=null;if(l)return p}
+  for(const p of empty)for(let o=0;o<n;o++){
+    if(o===me)continue;
+    S.board[p]=o;const l=getLine(p,o);S.board[p]=null;if(l)return p;
+  }
+  if(lvl==="Hard"&&n===2&&S.size===3){
+    if(empty.length===9)return pick([0,2,4,6,8]);
+    let best=-Infinity,mv=empty[0];
+    for(const p of empty){
+      S.board[p]=me;const sc=minimax(p,me,1-me,me,1);S.board[p]=null;
+      if(sc>best){best=sc;mv=p}
+    }
+    return mv;
+  }
+  const noise=lvl==="Medium"?6:.5,mid=(S.size-1)/2;
+  let best=-Infinity,mv=empty[0];
+  for(const p of empty){
+    S.board[p]=me;
+    let sc=Math.pow(Math.max(...runs(p,me).map(c=>c.length)),2)*4;
+    for(let o=0;o<n;o++){
+      if(o===me)continue;
+      S.board[p]=o;
+      sc+=Math.pow(Math.max(...runs(p,o).map(c=>c.length)),2)*3;
+    }
+    S.board[p]=null;
+    sc-=Math.abs(Math.floor(p/S.size)-mid)+Math.abs(p%S.size-mid);
+    sc+=Math.random()*noise;
+    if(sc>best){best=sc;mv=p}
+  }
+  return mv;
+}
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+
+function minimax(last,lp,to,me,d){
+  if(getLine(last,lp))return lp===me?10-d:d-10;
+  if(!S.board.includes(null))return 0;
+  let res=to===me?-Infinity:Infinity;
+  for(let p=0;p<S.board.length;p++){
+    if(S.board[p]!==null)continue;
+    S.board[p]=to;
+    const sc=minimax(p,to,1-to,me,d+1);
+    S.board[p]=null;
+    res=to===me?Math.max(res,sc):Math.min(res,sc);
+  }
+  return res;
+}
+
+/* ---------- end of round ---------- */
+function finish(w,line){
+  S.over=true;S.scores[w]++;S.starter=(S.starter+1)%S.n;
+  const [s]=STY[w];
+  $("status").textContent=`🎉 ${name(w)} (${s}) wins!`;
+  $("status").style.color="var(--green)";$("bar").style.background="var(--green)";
+  updateBoard();updateScores();bump(w);
+  line.forEach(p=>$("board").children[p].classList.add("win"));
+  const rid=S.rid;
+  setTimeout(()=>{if(rid===S.rid)showResult(w)},1600);
+}
+
+function finishDraw(){
+  S.over=true;S.draws++;S.starter=(S.starter+1)%S.n;
+  $("status").textContent="🤝 It’s a draw!";
+  $("status").style.color="var(--yellow)";$("bar").style.background="var(--yellow)";
+  updateBoard();updateScores();bump(S.n);
+  const rid=S.rid;
+  setTimeout(()=>{if(rid===S.rid)popup("🤝","It’s a draw!","The board is full and nobody won.\nReady for another go?","var(--yellow)",[["▶ Next round",newRound,"var(--green)"],["Close",null,"var(--pink)"]])},800);
+}
+
+function undo(){
+  clearTimeout(S.ai);S.ai=null;
+  if(S.over){$("status").textContent="Round is over. Start a new round!";$("status").style.color="var(--yellow)";return}
+  if(!S.hist.length){$("status").textContent="Nothing to undo!";$("status").style.color="var(--yellow)";setTimeout(updateStatus,1200);return}
+  while(S.hist.length){
+    const [pos,pl]=S.hist.pop();
+    S.board[pos]=null;S.cur=pl;
+    if(!isCpu(pl))break;
+  }
+  updateBoard();updateStatus();cpuTurn();
+}
+
+/* ---------- popups ---------- */
+function popup(em,title,msg,color,btns,confetti){
+  const card=$("card");
+  card.style.borderColor=color;
+  card.innerHTML=`<div class="em">${em}</div><h2 style="color:${color}">${title}</h2><p>${esc(msg)}</p><div class="row"></div>`;
+  const row=card.querySelector(".row");
+  btns.forEach(([t,fn,bg])=>{
+    const b=document.createElement("button");
+    b.className="btn";b.textContent=t;b.style.background=bg;
+    b.onclick=()=>{closePopup(fn)};
+    row.appendChild(b);
+  });
+  $("ov").classList.add("show");
+  row.firstChild.focus();
+  if(confetti)for(let i=0;i<50;i++){
+    const f=document.createElement("div");f.className="cf";
+    f.style.left=Math.random()*100+"%";
+    f.style.background=STY[i%4][1];
+    f.style.animationDuration=(1.4+Math.random()*1.6)+"s";
+    f.style.animationDelay=(Math.random()*.8)+"s";
+    card.appendChild(f);
+  }
+}
+function closePopup(fn){
+  $("ov").classList.remove("show");
+  setTimeout(()=>{if(fn)fn()},250);
+}
+function showWelcome(){popup("🎮","Welcome!","Choose 2, 3 or 4 players.\nAny player can be a CPU 🤖\n\nMore players = bigger board!","var(--cyan)",[["Let’s play!",null,"var(--green)"]])}
+function showRules(){
+  const [sz,w]=CFG[S.n];
+  popup("📖","Rules",`${S.n} players → ${sz}×${sz} board\nGet ${w} symbols in a row (horizontal, vertical or diagonal) to win the round.\n\nThe starting player rotates every round.`,"var(--yellow)",[["Got it",null,"var(--green)"]]);
+}
+function showResult(w){
+  const sc=STY.slice(0,S.n).map((s,i)=>`${s[0]} ${S.scores[i]}`).join("   |   ");
+  popup("🏆","We have a winner!",`${name(w)} (${STY[w][0]}) wins this round!\n\nScores: ${sc}`,STY[w][1],[["▶ Next round",newRound,"var(--green)"],["Close",null,"var(--pink)"]],true);
+}
+function confirmReset(){
+  popup("⚠️","Reset scores?","All scores will be set back to zero.\nThis cannot be undone.","var(--pink)",[["Yes, reset",()=>{S.scores=[0,0,0,0];S.draws=0;S.starter=0;newRound()},"var(--pink)"],["Cancel",null,"var(--cyan)"]]);
+}
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("ov").classList.contains("show"))closePopup()});
+
+applyPlayers();
+setTimeout(showWelcome,400);
+</script>
+</body>
+</html>
